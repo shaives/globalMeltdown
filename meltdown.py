@@ -34,7 +34,7 @@ def get_table_info(cursor, table_name):
 # function to get month, lat, long and grid id from database
 def get_month_lat_long(cursor):
     # define how many entries you want or all (remove LIMIT 10)
-    sql_query = '''SELECT month, lat, lon, grid_id from ground_data LIMIT 10'''
+    sql_query = '''SELECT month, lat, lon, grid_id from ground_data'''
     cursor.execute(sql_query)
     return cursor.fetchall()
 
