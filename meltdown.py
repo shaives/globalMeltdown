@@ -151,7 +151,7 @@ for data in data_tiles:
         )
 
         if len(list(query.items())) == 0:
-            print("No data found")
+            print(f"No data found for this query. Start: {start_date}, End: {end_date}, Lat: {data[1]}, Long: {data[2]}, Grid ID: {data[3]}")
             continue
 
     except Exception as e:
