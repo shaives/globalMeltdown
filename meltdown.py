@@ -92,28 +92,28 @@ conn = sqlite3.connect(db_path)
 cursor = conn.cursor()
 
 # set this to True if you run it the first time, to create the database
-first = True
+# first = False
 
-if first == True:
-    # Read CSV file into a pandas DataFrame
-    df = pd.read_csv('./Data/base_data_1986-2018.csv')
+# if first == True:
+#     # Read CSV file into a pandas DataFrame
+#     df = pd.read_csv('./Data/base_data_1986-2018.csv')
 
-    df.drop('time', axis=1, inplace=True)
-    df.drop('index_right', axis=1, inplace=True)
-    df.month = pd.to_datetime(df.month, format='%Y-%m')
-    df = df[df['month'].dt.year != 1986]
+#     df.drop('time', axis=1, inplace=True)
+#     df.drop('index_right', axis=1, inplace=True)
+#     df.month = pd.to_datetime(df.month, format='%Y-%m')
+#     df = df[df['month'].dt.year != 1986]
 
-    # Write the DataFrame to the SQLite database
-    df.to_sql('ground_data', conn, if_exists='replace', index=False)
+#     # Write the DataFrame to the SQLite database
+#     df.to_sql('ground_data', conn, if_exists='replace', index=False)
 
-    # Alter the table to add new columns if they don't already exist
-    for column in columns_to_add:
-        column_name = column.split()[0]
-        if not column_exists(cursor, 'ground_data', column_name):
-            cursor.execute(f'ALTER TABLE ground_data ADD COLUMN {column}')
+#     # Alter the table to add new columns if they don't already exist
+#     for column in columns_to_add:
+#         column_name = column.split()[0]
+#         if not column_exists(cursor, 'ground_data', column_name):
+#             cursor.execute(f'ALTER TABLE ground_data ADD COLUMN {column}')
 
-    # Commit the changes
-    conn.commit()
+#     # Commit the changes
+#     conn.commit()
 
 # fetch data from fire.db
 cursor.execute('''SELECT * from ground_data LIMIT 10''')
