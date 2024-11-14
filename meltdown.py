@@ -158,7 +158,7 @@ for data in data_tiles:
 
     except Exception as e:
         
-        print(f"An error occurred: {e}")
+        print(f"An error occurred: {e}. Start: {start_date}, End: {end_date}, Lat: {data[1]}, Long: {data[2]}, Grid ID: {data[3]}")
         continue
 
     # Search the STAC catalog for all items matching the query
