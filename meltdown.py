@@ -19,6 +19,14 @@ columns_to_add = [
 	'npv_pc_90 REAL DEFAULT NAN'
 ]
 
+def get_all_years(cursor):
+    sql_query = '''
+    SELECT DISTINCT strftime('%Y', month) as year FROM ground_data
+    ORDER BY year
+    '''
+    cursor.execute(sql_query)
+    return [row[0] for row in cursor.fetchall()]
+
 #Get all tables
 def get_all_tables(cursor):
     sql_query = """SELECT name FROM sqlite_master  
@@ -31,11 +39,17 @@ def get_table_info(cursor, table_name):
     cursor.execute(f'PRAGMA table_info({table_name})')
     return cursor.fetchall()
 
-# function to get month, lat, long and grid id from database
-def get_month_lat_long(cursor):
-    # define how many entries you want or all (remove LIMIT 10)
-    sql_query = '''SELECT month, lat, lon, grid_id from ground_data LIMIT 10'''
-    cursor.execute(sql_query)
+# function to get month, lat, long and grid id from database for a given year and check if the data of the last 9 columns is NAN
+def get_month_lat_long(cursor, year):
+    sql_query = '''
+    SELECT month, lat, lon, grid_id 
+    FROM ground_data 
+    WHERE strftime('%Y', month) = ? 
+    AND (bs_pc_10 IS 'NAN' OR bs_pc_50 IS 'NAN' OR bs_pc_90 IS 'NAN' 
+    OR pv_pc_10 IS 'NAN' OR pv_pc_50 IS 'NAN' OR pv_pc_90 IS 'NAN' 
+    OR npv_pc_10 IS 'NAN' OR npv_pc_50 IS 'NAN' OR npv_pc_90 IS 'NAN')
+    '''
+    cursor.execute(sql_query, (year,))
     return cursor.fetchall()
 
 # Function to check if a column exists in a table
@@ -66,10 +80,10 @@ def update_ground_data(cursor, conn, data):
     # Commit the changes
     conn.commit()
 
-if os.name == 'posix':
-    db_path = '/data/oa3802fa25/GlobalMeltdown/fire.db'
-else:
-    db_path = 'fire.db'
+# if os.name == 'posix':
+#     db_path = '/data/oa3802fa25/GlobalMeltdown/fire.db'
+# else:
+db_path = 'fire.db'
 
 # Connect to the appropriate database
 conn = sqlite3.connect(db_path)
@@ -78,7 +92,7 @@ conn = sqlite3.connect(db_path)
 cursor = conn.cursor()
 
 # set this to True if you run it the first time, to create the database
-first = False
+first = True
 
 if first == True:
     # Read CSV file into a pandas DataFrame
@@ -123,66 +137,78 @@ odc.stac.configure_rio(
     aws={"aws_unsigned": True},
 )
 
-# get information from database
-data_tiles = get_month_lat_long(cursor)
 
-# print length of data
-print(len(data_tiles))
+years = get_all_years(cursor)
+cursor.close()
 
-# for each dataset, get the data from AWS
-for data in data_tiles:
+for year in years:
+    print(f"Processing data for year: {year}")
 
-    bbox = [data[2] - 0.05, data[1] - 0.05, data[2] + 0.05, data[1] + 0.05]
+    cursor = conn.cursor()
+    # get information from database
+    data_tiles = get_month_lat_long(cursor, year)
 
-    start_date = f"{data[0][:4]}-01-01"
-    end_date = f"{data[0][:4]}-12-31"
+    # print length of data
+    print(len(data_tiles))
 
-    print(f"Searching for data in {start_date} to {end_date} for lat: {data[1]} and long: {data[2]}")
+    cursor.close()
 
-    # Set product ID as the STAC "collection"
-    collections = ["ga_ls_fc_pc_cyear_3"]
+    # for each dataset, get the data from AWS
+    for data in data_tiles:
 
-    try:
-        # Build a query with the parameters above
-        query = catalog.search(
-            bbox=bbox,
-            collections=collections,
-            datetime=f"{start_date}/{end_date}",
-        )
+        bbox = [data[2] - 0.05, data[1] - 0.05, data[2] + 0.05, data[1] + 0.05]
 
-        if len(list(query.items())) == 0:
-            print("No data found")
+        start_date = f"{data[0][:4]}-01-01"
+        end_date = f"{data[0][:4]}-12-31"
+
+        print(f"Searching for data in {start_date} to {end_date} for lat: {data[1]} and long: {data[2]}")
+
+        # Set product ID as the STAC "collection"
+        collections = ["ga_ls_fc_pc_cyear_3"]
+
+        try:
+            # Build a query with the parameters above
+            query = catalog.search(
+                bbox=bbox,
+                collections=collections,
+                datetime=f"{start_date}/{end_date}",
+            )
+
+            if len(list(query.items())) == 0:
+                print(f"No data found for this query. Start: {start_date}, End: {end_date}, Lat: {data[1]}, Long: {data[2]}, Grid ID: {data[3]}")
+                continue
+
+        except Exception as e:
+            
+            print(f"An error occurred: {e}. Start: {start_date}, End: {end_date}, Lat: {data[1]}, Long: {data[2]}, Grid ID: {data[3]}")
             continue
 
-    except Exception as e:
+        # Search the STAC catalog for all items matching the query
+        items = list(query.items())
+        print(f"Found: {len(items):d} datasets")
+
+        # Load the data using the odc.stac module
+        ds = odc.stac.load(
+                    items=items,
+                    crs="EPSG:3577",
+                    lat=(bbox[1], bbox[3]),
+                    lon=(bbox[0], bbox[2]),
+                    time=(start_date, end_date))
         
-        print(f"An error occurred: {e}")
-        continue
+        data_entry = {
+            'time': data[0],
+            'grid_id': data[3],
+            'bs_pc_10': float(ds.bs_pc_10.mean().values),
+            'bs_pc_50': float(ds.bs_pc_50.mean().values),
+            'bs_pc_90': float(ds.bs_pc_90.mean().values),
+            'pv_pc_10': float(ds.pv_pc_10.mean().values),
+            'pv_pc_50': float(ds.pv_pc_50.mean().values),
+            'pv_pc_90': float(ds.pv_pc_90.mean().values),
+            'npv_pc_10': float(ds.npv_pc_10.mean().values),
+            'npv_pc_50': float(ds.npv_pc_50.mean().values),
+            'npv_pc_90': float(ds.npv_pc_90.mean().values)
+        }
 
-    # Search the STAC catalog for all items matching the query
-    items = list(query.items())
-    print(f"Found: {len(items):d} datasets")
-
-    # Load the data using the odc.stac module
-    ds = odc.stac.load(
-                items=items,
-                crs="EPSG:3577",
-                lat=(bbox[1], bbox[3]),
-                lon=(bbox[0], bbox[2]),
-                time=(start_date, end_date))
-    
-    data_entry = {
-        'time': data[0],
-        'grid_id': data[3],
-        'bs_pc_10': float(ds.bs_pc_10.mean().values),
-        'bs_pc_50': float(ds.bs_pc_50.mean().values),
-        'bs_pc_90': float(ds.bs_pc_90.mean().values),
-        'pv_pc_10': float(ds.pv_pc_10.mean().values),
-        'pv_pc_50': float(ds.pv_pc_50.mean().values),
-        'pv_pc_90': float(ds.pv_pc_90.mean().values),
-        'npv_pc_10': float(ds.npv_pc_10.mean().values),
-        'npv_pc_50': float(ds.npv_pc_50.mean().values),
-        'npv_pc_90': float(ds.npv_pc_90.mean().values)
-    }
-
-    update_ground_data(cursor, conn, data_entry)
+        cursor = conn.cursor()
+        update_ground_data(cursor, conn, data_entry)
+        cursor.close()
