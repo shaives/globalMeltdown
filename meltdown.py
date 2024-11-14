@@ -66,10 +66,10 @@ def update_ground_data(cursor, conn, data):
     # Commit the changes
     conn.commit()
 
-if os.name == 'posix':
-    db_path = '/data/oa3802fa25/GlobalMeltdown/fire.db'
-else:
-    db_path = 'fire.db'
+# if os.name == 'posix':
+#     db_path = '/data/oa3802fa25/GlobalMeltdown/fire.db'
+# else:
+db_path = 'fire.db'
 
 # Connect to the appropriate database
 conn = sqlite3.connect(db_path)
@@ -78,7 +78,7 @@ conn = sqlite3.connect(db_path)
 cursor = conn.cursor()
 
 # set this to True if you run it the first time, to create the database
-first = False
+first = True
 
 if first == True:
     # Read CSV file into a pandas DataFrame
@@ -128,6 +128,8 @@ data_tiles = get_month_lat_long(cursor)
 
 # print length of data
 print(len(data_tiles))
+
+cursor.close()
 
 # for each dataset, get the data from AWS
 for data in data_tiles:
@@ -185,4 +187,6 @@ for data in data_tiles:
         'npv_pc_90': float(ds.npv_pc_90.mean().values)
     }
 
+    cursor = conn.cursor()
     update_ground_data(cursor, conn, data_entry)
+    cursor.close()
