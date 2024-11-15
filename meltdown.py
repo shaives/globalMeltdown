@@ -183,9 +183,16 @@ for year in years:
             print(f"An error occurred: {e}. Start: {start_date}, End: {end_date}, Lat: {data[1]}, Long: {data[2]}, Grid ID: {data[3]}")
             continue
 
-        # Search the STAC catalog for all items matching the query
-        items = list(query.items())
-        print(f"Found: {len(items):d} datasets")
+        try:
+
+            # Search the STAC catalog for all items matching the query
+            items = list(query.items())
+            print(f"Found: {len(items):d} datasets")
+
+        except Exception as e:
+
+            print(f"An error occurred while searching for items: {e}")
+            continue
 
         # Load the data using the odc.stac module
         ds = odc.stac.load(
