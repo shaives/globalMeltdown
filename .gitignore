@@ -26,7 +26,7 @@ share/python-wheels/
 *.egg
 MANIFEST
 Data/
-fire.db
+*.db
 *log.txt
 
 # PyInstaller
