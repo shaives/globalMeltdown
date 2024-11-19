@@ -1,5 +1,4 @@
 #!/bin/sh
-#SBATCH --array=0
 #SBATCH --job-name globalMeltdown
 #SBATCH --nodes=1 --tasks-per-node=2 --mem=16GB
 #SBATCH --output=%j_log.txt

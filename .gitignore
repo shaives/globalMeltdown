@@ -26,7 +26,8 @@ share/python-wheels/
 *.egg
 MANIFEST
 Data/
-fire.db
+*.db
+*log.txt
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
