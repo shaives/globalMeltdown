@@ -9,4 +9,9 @@
 . /etc/profile
 source /smallwork/$USER/comp3/bin/activate
 
+# parameters
+# --first           : first run, will read in the data and create a database    : default False  
+# --parallel        : run in parallel mode, one proccess for each year          : default False
+# --db-path         : path to database file                                     : default 'fire.db'
+
 python meltdown.py
