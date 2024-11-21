@@ -14,5 +14,5 @@ During the preparation of data for a wider study on fire predictors in southeast
 * Tutorial.html - Tutorial describing the project and the process. <br>
 * Brief.pdf - Presentation given by the group. <br>
 * meltdown.py - Python Script that creates a SQLite database, performs the API calls and appends the database.<br>
-* firefighter.sh - Shell file to run the meltdown.py script on HPC. <br>
+* firefighter.sh - Shell script to run the meltdown.py script on HPC. <br>
 * Firetrucks_PowerBI.pbix - PowerBI file for the project
