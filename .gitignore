@@ -28,6 +28,7 @@ MANIFEST
 Data/
 *.db
 *log.txt
+Tutorial.ipynb
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
