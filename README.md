@@ -1,7 +1,7 @@
 # OA3802: Computational Methods for Data Analytics
 ## Geospacial Vegetation Analysis for the Brushfire Prediction Model
 Team Members: <br>
-Maj Jason Stisser <br>
+MAJ Jason Stisser <br>
 LCDR Alex Bedley <br>
 MAJ Conrad Urban <br>
 CAPT Gary Tyler <br>
